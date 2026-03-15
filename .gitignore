@@ -12,3 +12,6 @@ backend/infra/local-dev.env
 
 # Local service runtime state/logs
 backend/.run/
+
+
+**/.idea
