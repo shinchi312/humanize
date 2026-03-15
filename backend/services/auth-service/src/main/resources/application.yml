@@ -1,0 +1,49 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:h2:mem:authdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${AUTH_DB_USERNAME:sa}
+    password: ${AUTH_DB_PASSWORD:}
+    driver-class-name: ${AUTH_DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${AUTH_DB_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${AUTH_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${AUTH_FLYWAY_BASELINE_ON_MIGRATE:true}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: auth-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.humanize.*
+        spring.json.value.default.type: com.humanize.contracts.events.DomainEvent
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  auth:
+    jwt-secret: ${AUTH_JWT_SECRET:dev-secret-change-me}
+    issuer: ${AUTH_ISSUER:humanize-auth}
+    access-token-minutes: ${AUTH_ACCESS_TOKEN_MINUTES:15}
+    refresh-token-days: ${AUTH_REFRESH_TOKEN_DAYS:30}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}

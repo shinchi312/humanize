@@ -1,0 +1,49 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: library-service
+  datasource:
+    url: ${LIBRARY_DB_URL:jdbc:h2:mem:librarydb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${LIBRARY_DB_USERNAME:sa}
+    password: ${LIBRARY_DB_PASSWORD:}
+    driver-class-name: ${LIBRARY_DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${LIBRARY_DB_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${LIBRARY_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${LIBRARY_FLYWAY_BASELINE_ON_MIGRATE:true}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: library-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.humanize.*
+        spring.json.value.default.type: com.humanize.contracts.events.DomainEvent
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  r2:
+    account-id: ${R2_ACCOUNT_ID:}
+    endpoint: ${R2_ENDPOINT:}
+    bucket: ${R2_BUCKET:humanize-books}
+    access-key-id: ${R2_ACCESS_KEY_ID:}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+    upload-url-ttl-minutes: ${R2_UPLOAD_URL_TTL_MINUTES:15}

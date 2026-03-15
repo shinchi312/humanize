@@ -3,3 +3,12 @@ output_humanized.docx
 .ipynb_checkpoints
 .venv
 
+
+# Backend build artifacts
+backend/**/target/
+
+# Local backend env (developer-specific)
+backend/infra/local-dev.env
+
+# Local service runtime state/logs
+backend/.run/

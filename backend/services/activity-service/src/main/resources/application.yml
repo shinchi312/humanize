@@ -1,0 +1,40 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: activity-service
+  datasource:
+    url: ${ACTIVITY_DB_URL:jdbc:h2:mem:activitydb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${ACTIVITY_DB_USERNAME:sa}
+    password: ${ACTIVITY_DB_PASSWORD:}
+    driver-class-name: ${ACTIVITY_DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${ACTIVITY_DB_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${ACTIVITY_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${ACTIVITY_FLYWAY_BASELINE_ON_MIGRATE:true}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: activity-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.humanize.*
+        spring.json.value.default.type: com.humanize.contracts.events.DomainEvent
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

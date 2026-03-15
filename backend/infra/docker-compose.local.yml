@@ -1,0 +1,66 @@
+name: humanize-local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: humanize-postgres
+    environment:
+      POSTGRES_DB: humanize
+      POSTGRES_USER: humanize
+      POSTGRES_PASSWORD: humanize
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U humanize -d humanize"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.8
+    container_name: humanize-redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --check=false
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - INTERNAL://redpanda:9092,EXTERNAL://localhost:19092
+      - --pandaproxy-addr
+      - INTERNAL://0.0.0.0:8082
+      - --advertise-pandaproxy-addr
+      - INTERNAL://redpanda:8082
+    ports:
+      - "19092:19092"
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  kafka-console:
+    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    container_name: humanize-kafka-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8089:8080"
+
+volumes:
+  postgres_data:
