@@ -9,9 +9,10 @@ This flow is implemented in the scaffold via Kafka listeners/publishers.
 3. `ingestion-service` consumes and publishes processing events to `book.processing` (`STARTED`, `METADATA_EXTRACTED`, `COMPLETED` or `FAILED`).
 4. `reader-service` publishes `READER_PROGRESS_UPDATED` to `reader.progress`.
 5. `activity-service` consumes progress and publishes activity to `reader.activity`.
-6. `notification-service` consumes activity and publishes spoiler request to `notification.lifecycle`.
-7. `ai-service` consumes notification lifecycle events for spoiler-generation pipeline hooks.
-8. `recommendation-service` consumes progress/activity + metadata extracted events for scoring and ranking.
+6. `notification-service` consumes activity and publishes spoiler requests to `notification.lifecycle`.
+7. `ai-service` consumes spoiler requests and publishes `NOTIFICATION_SPOILER_GENERATED`.
+8. `notification-service` sends email and publishes `NOTIFICATION_EMAIL_SENT` or `NOTIFICATION_EMAIL_FAILED`.
+9. `recommendation-service` consumes progress/activity + metadata extracted events for scoring and ranking.
 
 ## Sample calls
 

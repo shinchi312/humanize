@@ -2,6 +2,9 @@
 
 Spring Boot microservices scaffold with shared contracts and Kafka events.
 
+Architecture diagram:
+- `docs/ARCHITECTURE_FLOW_DIAGRAM.md`
+
 ## Prerequisites
 
 - JDK 21+ (must include `javac`, not JRE-only runtime).
@@ -82,6 +85,20 @@ Recommendation service:
 - Consumes `READER_PROGRESS_UPDATED`, `READER_ACTIVITY_RECORDED`, and `BOOK_METADATA_EXTRACTED`.
 - Stores book features + user signals + recommendation scores in DB.
 - `GET /api/recommendations/{userId}` returns ranked, scored recommendations.
+
+Notification service:
+
+- `GET /api/notifications/preferences/{userId}` (load user notification settings)
+- `PUT /api/notifications/preferences/{userId}` (upsert user notification settings)
+- `GET /api/notifications/logs/{userId}?bookId=...` (latest delivery lifecycle logs)
+- `POST /api/notifications/spoiler/request` (manual spoiler generation request)
+- Consumes `READER_ACTIVITY_RECORDED`, applies preference/threshold/cooldown rules, emits `NOTIFICATION_SPOILER_REQUESTED`.
+- Consumes `NOTIFICATION_SPOILER_GENERATED`, sends email via Brevo API (or log-only mode), emits `NOTIFICATION_EMAIL_SENT` or `NOTIFICATION_EMAIL_FAILED`.
+
+AI service:
+
+- Consumes `NOTIFICATION_SPOILER_REQUESTED`.
+- Generates spoiler text (heuristic or Ollama) and emits `NOTIFICATION_SPOILER_GENERATED`.
 
 ## Hardened-System Setup (No sudo)
 
@@ -180,6 +197,7 @@ What it does:
 - Generates a valid local PDF for the emitted object key.
 - Emits `/uploaded`, waits for `COMPLETED` ingestion, posts reader progress.
 - Verifies activity and recommendation results for the same `userId/bookId`.
+- Triggers notification spoiler request and verifies email lifecycle (`EMAIL_SENT`/`EMAIL_FAILED`).
 
 Optional flags:
 - `--no-up` to skip start and only run checks against already running services.
@@ -209,5 +227,11 @@ Optional flags:
 `ACTIVITY_DB_URL`, `ACTIVITY_DB_USERNAME`, `ACTIVITY_DB_PASSWORD`, `ACTIVITY_DB_DRIVER`, `ACTIVITY_DB_DDL_AUTO`, `ACTIVITY_FLYWAY_ENABLED`, `ACTIVITY_FLYWAY_BASELINE_ON_MIGRATE`.
 - Recommendation DB env vars:
 `RECO_DB_URL`, `RECO_DB_USERNAME`, `RECO_DB_PASSWORD`, `RECO_DB_DRIVER`, `RECO_DB_DDL_AUTO`, `RECO_FLYWAY_ENABLED`, `RECO_FLYWAY_BASELINE_ON_MIGRATE`.
+- Notification DB env vars:
+`NOTIFICATION_DB_URL`, `NOTIFICATION_DB_USERNAME`, `NOTIFICATION_DB_PASSWORD`, `NOTIFICATION_DB_DRIVER`, `NOTIFICATION_DB_DDL_AUTO`, `NOTIFICATION_FLYWAY_ENABLED`, `NOTIFICATION_FLYWAY_BASELINE_ON_MIGRATE`.
+- Notification behavior/email env vars:
+`NOTIFICATION_DEFAULT_SPOILER_PROGRESS_PERCENT`, `NOTIFICATION_SPOILER_COOLDOWN_MINUTES`, `NOTIFICATION_BREVO_API_KEY`, `NOTIFICATION_BREVO_BASE_URL`, `NOTIFICATION_BREVO_FROM_EMAIL`, `NOTIFICATION_BREVO_FROM_NAME`, `NOTIFICATION_BREVO_REPLY_TO_EMAIL`, `NOTIFICATION_BREVO_REPLY_TO_NAME`.
+- AI spoiler generation env vars:
+`AI_PROVIDER`, `AI_MODEL`, `AI_OLLAMA_BASE_URL`, `AI_MAX_PREVIEW_CHARS`.
 - DB migration scripts live at `src/main/resources/db/migration` per service; JPA now defaults to `validate` mode.
 - This scaffold focuses on service boundaries + event wiring, not production logic.

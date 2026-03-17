@@ -24,3 +24,10 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  ai:
+    provider: ${AI_PROVIDER:heuristic}
+    model: ${AI_MODEL:llama3.2:3b}
+    ollama-base-url: ${AI_OLLAMA_BASE_URL:http://localhost:11434}
+    max-preview-chars: ${AI_MAX_PREVIEW_CHARS:260}

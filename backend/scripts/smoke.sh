@@ -26,6 +26,8 @@ DEFAULT_SERVICES=(
   reader-service
   activity-service
   recommendation-service
+  notification-service
+  ai-service
 )
 
 declare -A SERVICE_PORT=(

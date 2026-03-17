@@ -28,6 +28,8 @@ SERVICES=(
   reader-service
   activity-service
   recommendation-service
+  notification-service
+  ai-service
 )
 
 declare -A SERVICE_PORT=(
@@ -37,6 +39,8 @@ declare -A SERVICE_PORT=(
   [reader-service]=8084
   [activity-service]=8085
   [recommendation-service]=8086
+  [notification-service]=8087
+  [ai-service]=8088
 )
 
 usage() {
@@ -341,6 +345,40 @@ poll_recommendations() {
   die "Timed out waiting for recommendation containing ${BOOK_ID} (${TIMEOUT_SECONDS}s)"
 }
 
+request_spoiler_manually() {
+  local url="http://127.0.0.1:8087/api/notifications/spoiler/request"
+  local body
+  body="$(printf '{"userId":"%s","bookId":"%s","reason":"manual e2e verification request"}' \
+    "${USER_ID}" "${BOOK_ID}")"
+  http_json POST "${url}" "${body}"
+  if [[ "${LAST_STATUS}" -lt 200 || "${LAST_STATUS}" -ge 300 ]]; then
+    die "notification spoiler request failed (HTTP ${LAST_STATUS}): ${LAST_BODY}"
+  fi
+}
+
+poll_notification_delivery() {
+  local user_id_encoded book_id_encoded url
+  user_id_encoded="$(urlencode_segment "${USER_ID}")"
+  book_id_encoded="$(urlencode_segment "${BOOK_ID}")"
+  url="http://127.0.0.1:8087/api/notifications/logs/${user_id_encoded}?bookId=${book_id_encoded}"
+  local deadline=$((SECONDS + TIMEOUT_SECONDS))
+
+  while (( SECONDS < deadline )); do
+    http_json GET "${url}"
+    if printf '%s' "${LAST_BODY}" | grep -Fq '"status":"EMAIL_SENT"'; then
+      log "Notification lifecycle reached EMAIL_SENT"
+      return 0
+    fi
+    if printf '%s' "${LAST_BODY}" | grep -Fq '"status":"EMAIL_FAILED"'; then
+      log "Notification lifecycle reached EMAIL_FAILED"
+      return 0
+    fi
+    sleep 2
+  done
+
+  die "Timed out waiting for notification email lifecycle for ${BOOK_ID}"
+}
+
 main() {
   parse_args "$@"
   require_cmd curl
@@ -377,6 +415,8 @@ main() {
 
   poll_activity_observed
   poll_recommendations
+  request_spoiler_manually
+  poll_notification_delivery
 
   log "E2E smoke passed"
   printf '\nSummary:\n'

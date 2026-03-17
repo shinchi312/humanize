@@ -4,6 +4,20 @@ server:
 spring:
   application:
     name: notification-service
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:h2:mem:notificationdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${NOTIFICATION_DB_USERNAME:sa}
+    password: ${NOTIFICATION_DB_PASSWORD:}
+    driver-class-name: ${NOTIFICATION_DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${NOTIFICATION_DB_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${NOTIFICATION_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${NOTIFICATION_FLYWAY_BASELINE_ON_MIGRATE:true}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -24,3 +38,15 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  notification:
+    default-spoiler-progress-percent: ${NOTIFICATION_DEFAULT_SPOILER_PROGRESS_PERCENT:60}
+    spoiler-cooldown-minutes: ${NOTIFICATION_SPOILER_COOLDOWN_MINUTES:720}
+    email:
+      api-key: ${NOTIFICATION_BREVO_API_KEY:}
+      brevo-base-url: ${NOTIFICATION_BREVO_BASE_URL:https://api.brevo.com}
+      from-email: ${NOTIFICATION_BREVO_FROM_EMAIL:no-reply@humanize.local}
+      from-name: ${NOTIFICATION_BREVO_FROM_NAME:Humanize}
+      reply-to-email: ${NOTIFICATION_BREVO_REPLY_TO_EMAIL:}
+      reply-to-name: ${NOTIFICATION_BREVO_REPLY_TO_NAME:}

@@ -12,11 +12,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/ai")
 @Validated
 public class AiController {
+    private final SpoilerGenerationService spoilerGenerationService;
+
+    public AiController(SpoilerGenerationService spoilerGenerationService) {
+        this.spoilerGenerationService = spoilerGenerationService;
+    }
 
     @PostMapping("/spoiler/preview")
     public Map<String, Object> spoilerPreview(@RequestBody SpoilerRequest request) {
-        String preview = "You are three chapters away from a major reveal involving " + request.characterName() + ".";
-        return Map.of("bookId", request.bookId(), "preview", preview, "model", "gemini-placeholder");
+        SpoilerGenerationService.GeneratedSpoiler generated = spoilerGenerationService.previewFromCharacter(
+                request.bookId(),
+                request.characterName()
+        );
+        return Map.of(
+                "bookId", request.bookId(),
+                "preview", generated.text(),
+                "provider", generated.provider(),
+                "model", generated.model()
+        );
     }
 
     public record SpoilerRequest(@NotBlank String bookId, @NotBlank String characterName) {
